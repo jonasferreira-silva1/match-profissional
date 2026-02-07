@@ -1,52 +1,119 @@
 // ============================================================
-// ResumeMatch AI — NLP Engine (TF-IDF + Cosine Similarity)
+// ResumeMatch AI — NLP Engine (TF-IDF + Cosine Similarity + Semantic Embeddings)
 // ============================================================
 
-// Master skills list with categories
+import { semanticSimilarity, extractSkillsSemantically } from './semantic-engine'
+
+// Normalização de skills - mapeia variações para termo canônico
+const SKILL_NORMALIZATION: Record<string, string> = {
+  // React variations
+  'reactjs': 'react',
+  'react.js': 'react',
+  'react-js': 'react',
+  'reactjs': 'react',
+  
+  // JavaScript variations
+  'js': 'javascript',
+  'ecmascript': 'javascript',
+  'es6': 'javascript',
+  'es2015': 'javascript',
+  
+  // Docker variations
+  'docker-compose': 'docker compose',
+  'dockercompose': 'docker compose',
+  
+  // Node variations
+  'nodejs': 'node',
+  'node.js': 'node',
+  
+  // HTML/CSS variations
+  'html5': 'html',
+  'css3': 'css',
+  
+  // REST variations
+  'rest': 'apis rest',
+  'restful': 'apis rest',
+  'rest api': 'apis rest',
+  
+  // PostgreSQL variations
+  'postgres': 'postgresql',
+  
+  // MongoDB variations
+  'mongo': 'mongodb',
+  
+  // Vue variations
+  'vuejs': 'vue',
+  'vue.js': 'vue',
+  'vue3': 'vue',
+  
+  // Angular variations
+  'angularjs': 'angular',
+  
+  // Next.js variations
+  'nextjs': 'next.js',
+  'next': 'next.js',
+}
+
+// Master skills list with categories - Expanded with variations and synonyms
 const SKILL_DATABASE: Record<string, string[]> = {
   languages: [
-    "python", "javascript", "typescript", "java", "c#", "c++", "go", "golang",
-    "rust", "ruby", "php", "swift", "kotlin", "scala", "r", "dart", "lua",
-    "perl", "haskell", "elixir", "clojure",
+    "python", "javascript", "typescript", "java", "c#", "c++", "csharp", "cpp",
+    "golang", "go language", "rust", "ruby", "php", "swift", "kotlin", "scala", 
+    "r language", "r programming", "dart", "lua", "perl", "haskell", "elixir", "clojure",
+    "node", "nodejs", "node.js", "html", "html5", "css", "css3",
   ],
   frameworks: [
-    "react", "nextjs", "next.js", "angular", "vue", "vuejs", "vue.js",
-    "svelte", "django", "flask", "fastapi", "spring", "express", "nestjs",
-    "nest.js", "rails", "laravel", "flutter", "react native",
-    ".net", "asp.net", "nuxt", "remix", "gatsby",
+    "react", "reactjs", "react.js", "nextjs", "next.js", "next",
+    "angular", "angularjs", "vue", "vuejs", "vue.js", "vue3",
+    "svelte", "django", "flask", "fastapi", "spring", "spring boot",
+    "express", "expressjs", "nestjs", "nest.js", "nest",
+    "rails", "ruby on rails", "laravel", "flutter", "react native",
+    ".net", "asp.net", "aspnet", "nuxt", "remix", "gatsby",
+    "sveltekit", "astro", "solidjs", "qwik",
   ],
   databases: [
-    "sql", "postgresql", "postgres", "mysql", "mongodb", "redis", "sqlite",
-    "dynamodb", "cassandra", "elasticsearch", "neo4j", "supabase", "firebase",
-    "prisma", "drizzle", "sequelize",
+    "sql", "postgresql", "postgres", "mysql", "mongodb", "mongo",
+    "redis", "sqlite", "oracle", "sql server", "mssql",
+    "dynamodb", "cassandra", "elasticsearch", "neo4j",
+    "supabase", "firebase", "firestore",
+    "prisma", "drizzle", "sequelize", "typeorm", "knex",
   ],
   devops: [
-    "docker", "kubernetes", "k8s", "aws", "azure", "gcp", "terraform",
-    "ansible", "jenkins", "github actions", "gitlab ci", "ci/cd", "cicd",
-    "linux", "nginx", "apache", "vercel", "netlify", "heroku",
+    "docker", "docker compose", "docker-compose", "dockercompose",
+    "kubernetes", "k8s", "aws", "amazon web services",
+    "azure", "gcp", "google cloud", "terraform", "ansible",
+    "jenkins", "github actions", "gitlab ci", "ci/cd", "cicd",
+    "linux", "ubuntu", "debian", "centos", "nginx", "apache",
+    "vercel", "netlify", "heroku", "cloudflare",
+    "ec2", "s3", "lambda", "ecs", "eks",
   ],
   tools: [
     "git", "github", "gitlab", "bitbucket", "jira", "confluence",
-    "figma", "postman", "insomnia", "vscode", "vim",
-    "webpack", "vite", "babel", "eslint", "prettier",
+    "figma", "postman", "insomnia", "vscode", "visual studio code",
+    "vim", "neovim", "webpack", "vite", "babel", "eslint", "prettier",
+    "npm", "yarn", "pnpm",
   ],
   concepts: [
-    "api rest", "rest", "restful", "graphql", "grpc", "websocket",
-    "microservicos", "microservices", "tdd", "bdd", "solid",
-    "design patterns", "padroes de projeto", "clean code", "clean architecture",
-    "ddd", "event driven", "serverless", "oauth", "jwt",
-    "agile", "scrum", "kanban",
+    "api rest", "rest", "restful", "rest api", "apis rest",
+    "graphql", "grpc", "websocket", "websockets",
+    "microservicos", "microservices", "micro servicos",
+    "tdd", "test driven development", "bdd", "solid", "solid principles",
+    "design patterns", "padroes de projeto", "clean code",
+    "clean architecture", "ddd", "domain driven design",
+    "event driven", "serverless", "oauth", "oauth2", "jwt",
+    "agile", "scrum", "kanban", "ci/cd", "devops",
   ],
   data: [
-    "machine learning", "deep learning", "nlp", "pandas", "numpy",
-    "tensorflow", "pytorch", "scikit-learn", "data science",
-    "big data", "spark", "hadoop", "etl", "power bi", "tableau",
+    "machine learning", "deep learning", "dl", "nlp",
+    "pandas", "numpy", "tensorflow", "pytorch", "scikit-learn",
+    "scikit learn", "data science", "big data", "spark", "hadoop",
+    "etl", "power bi", "tableau", "data analysis", "analise de dados",
   ],
   softskills: [
     "lideranca", "comunicacao", "trabalho em equipe", "proatividade",
     "resolucao de problemas", "pensamento critico", "gestao de tempo",
     "adaptabilidade", "criatividade", "colaboracao", "empatia",
-    "organizacao", "autonomia", "negociacao",
+    "organizacao", "autonomia", "negociacao", "comunicacao interpessoal",
   ],
 }
 
@@ -62,11 +129,28 @@ const STOP_WORDS = new Set([
   "tambem", "ja", "so", "ainda", "quando", "onde", "como",
 ])
 
-// Experience level keywords
+// Experience level keywords - Expanded detection
 const EXPERIENCE_LEVELS = {
-  junior: ["junior", "jr", "estagio", "estagiario", "trainee", "aprendiz", "intern", "entry level", "iniciante"],
-  pleno: ["pleno", "mid", "mid-level", "intermediario", "analista"],
-  senior: ["senior", "sr", "especialista", "lead", "principal", "staff", "architect"],
+  junior: [
+    "junior", "jr", "júnior", "estagio", "estágio", "estagiario", "estagiário",
+    "trainee", "aprendiz", "intern", "internship", "entry level", "entry-level",
+    "iniciante", "iniciante em", "primeiro emprego", "sem experiencia",
+    "sem experiência", "sem experiencia previa", "sem experiência prévia",
+    "comecando", "começando", "inicio de carreira", "início de carreira",
+  ],
+  pleno: [
+    "pleno", "mid", "mid-level", "mid level", "intermediario", "intermediário",
+    "analista", "desenvolvedor", "developer", "programador", "programmer",
+    "2 anos", "3 anos", "4 anos", "dois anos", "tres anos", "quatro anos",
+    "2+ anos", "3+ anos", "experiencia media", "experiência média",
+  ],
+  senior: [
+    "senior", "sr", "sênior", "especialista", "specialist", "lead", "lider",
+    "leader", "principal", "staff", "architect", "arquiteto", "tech lead",
+    "5 anos", "5+ anos", "cinco anos", "mais de 5 anos",
+    "experiencia avancada", "experiência avançada", "vasta experiencia",
+    "vasta experiência", "expert", "expertise",
+  ],
 }
 
 // ============================================================
@@ -74,6 +158,17 @@ const EXPERIENCE_LEVELS = {
 // ============================================================
 
 export function cleanText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remove accents
+    .replace(/[^a-z0-9\s.#+\/\-]/g, " ") // keep alphanumeric and key symbols (preserve #, ., +, /, -)
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+// Preserve original text for skill extraction (less aggressive cleaning)
+function cleanTextForSkills(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFD")
@@ -168,27 +263,150 @@ export interface SkillMatch {
   status: "match" | "missing" | "extra"
 }
 
-function extractSkills(text: string): Map<string, string> {
-  const cleaned = cleanText(text)
+async function extractSkills(text: string, useSemantic: boolean = true): Promise<Map<string, string>> {
+  // Keep original text for better matching
+  const originalText = text.toLowerCase()
+  const cleaned = cleanTextForSkills(text)
   const found = new Map<string, string>()
 
+  // Create multiple normalized versions for flexible matching
+  const normalizedText = cleaned
+    .replace(/[,;:]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+
+  // Also preserve original with minimal cleaning for exact matches
+  const originalNormalized = originalText
+    .replace(/[,;:]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+
+  // Combine both for comprehensive search
+  const searchText = normalizedText + " " + originalNormalized
+
   for (const [category, skills] of Object.entries(SKILL_DATABASE)) {
-    for (const skill of skills) {
-      // Check for exact match or word boundary match
+    // Sort skills by length (longer first) to avoid partial matches
+    const sortedSkills = [...skills].sort((a, b) => b.length - a.length)
+    
+    for (const skill of sortedSkills) {
+      // Skip if already found
+      if (found.has(skill)) continue
+      
+      // Escape special regex characters
       const escapedSkill = skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-      const regex = new RegExp(`\\b${escapedSkill}\\b`, "i")
-      if (regex.test(cleaned)) {
-        found.set(skill, category)
+      
+      // Create multiple patterns - be more permissive
+      const patterns = [
+        // Pattern 1: Word boundary (most reliable)
+        new RegExp(`\\b${escapedSkill}\\b`, "i"),
+        // Pattern 2: With any non-alphanumeric before/after
+        new RegExp(`[^a-z0-9]${escapedSkill}[^a-z0-9]`, "i"),
+        // Pattern 3: Start or end of string
+        new RegExp(`(^|\\s)${escapedSkill}(\\s|$)`, "i"),
+        // Pattern 4: In lists with punctuation
+        new RegExp(`[,:;]\\s*${escapedSkill}\\s*[,:;]`, "i"),
+        // Pattern 5: After common section headers
+        new RegExp(`(front-end|frontend|back-end|backend|devops|tools|frameworks|linguagens|bancos|databases|habilidades|skills)[:;]?\\s*${escapedSkill}`, "i"),
+      ]
+      
+      let matched = false
+      
+      for (const regex of patterns) {
+        // Test in all text versions
+        const testTexts = [normalizedText, originalNormalized, searchText]
+        
+        for (const testText of testTexts) {
+          if (regex.test(testText)) {
+            // Get all matches for validation
+            const matches = [...testText.matchAll(new RegExp(regex.source, "gi"))]
+            
+            for (const match of matches) {
+              if (!match.index) continue
+              
+              const matchIndex = match.index
+              const matchText = match[0]
+              const beforeChar = matchIndex > 0 ? testText[matchIndex - 1] : " "
+              const afterIndex = matchIndex + matchText.length
+              const afterChar = afterIndex < testText.length ? testText[afterIndex] : " "
+              
+              // Very lenient validation - accept if surrounded by non-alphanumeric or spaces
+              const isValidBoundary = 
+                /[^a-z0-9]/.test(beforeChar) && /[^a-z0-9]/.test(afterChar) ||
+                beforeChar === " " && (afterChar === " " || /[,;:\.]/.test(afterChar)) ||
+                /[,;:]/.test(beforeChar) && /[^a-z0-9]/.test(afterChar) ||
+                matchIndex === 0 || afterIndex >= testText.length // At start/end of text
+              
+              if (isValidBoundary) {
+                found.set(skill, category)
+                matched = true
+                break
+              }
+            }
+            
+            if (matched) break
+          }
+        }
+        
+        if (matched) break
+      }
+      
+      // Handle conflicts with shorter/longer variations
+      if (matched) {
+        for (const [foundSkill, foundCategory] of Array.from(found.entries())) {
+          if (foundSkill !== skill) {
+            // If one is substring of another, keep the longer one
+            if (skill.includes(foundSkill) && skill.length > foundSkill.length) {
+              found.delete(foundSkill)
+              found.set(skill, category)
+            } else if (foundSkill.includes(skill) && foundSkill.length > skill.length) {
+              found.delete(skill)
+              found.set(foundSkill, foundCategory)
+              matched = false
+              break
+            }
+          }
+        }
       }
     }
   }
 
-  return found
+  // Complementar com detecção semântica se habilitada
+  if (useSemantic) {
+    try {
+      // Passar skills já encontradas para otimizar (não re-verificar)
+      const alreadyFoundSet = new Set(found.keys())
+      const semanticSkills = await extractSkillsSemantically(text, SKILL_DATABASE, alreadyFoundSet)
+      
+      // Adicionar skills encontradas semanticamente que não foram encontradas por regex
+      for (const [skill, { category, confidence }] of semanticSkills.entries()) {
+        if (!found.has(skill) && confidence > 0.35) {
+          // Só adicionar se confiança for boa
+          found.set(skill, category)
+        }
+        // Se já foi encontrada por regex, manter (regex é mais rápido e confiável para exact matches)
+      }
+    } catch (error) {
+      console.warn('Semantic skill extraction failed, using regex only:', error)
+      // Continuar apenas com regex se embeddings falharem
+    }
+  }
+  
+  // Normalizar skills encontradas (mapear variações para termos canônicos)
+  const normalized = new Map<string, string>()
+  for (const [skill, category] of found.entries()) {
+    const normalizedSkill = SKILL_NORMALIZATION[skill.toLowerCase()] || skill
+    // Se já existe a versão normalizada, manter a mais específica
+    if (!normalized.has(normalizedSkill) || skill.length > normalizedSkill.length) {
+      normalized.set(normalizedSkill, category)
+    }
+  }
+  
+  return normalized
 }
 
-function compareSkills(jobText: string, resumeText: string): SkillMatch[] {
-  const jobSkills = extractSkills(jobText)
-  const resumeSkills = extractSkills(resumeText)
+async function compareSkills(jobText: string, resumeText: string, useSemantic: boolean = true): Promise<SkillMatch[]> {
+  const jobSkills = await extractSkills(jobText, useSemantic)
+  const resumeSkills = await extractSkills(resumeText, useSemantic)
   const results: SkillMatch[] = []
   const seen = new Set<string>()
 
@@ -245,66 +463,116 @@ export interface Suggestion {
   skill?: string
 }
 
-function generateSuggestions(skills: SkillMatch[], score: number): Suggestion[] {
+function generateSuggestions(skills: SkillMatch[], score: number, jobLevel: string, resumeLevel: string): Suggestion[] {
   const suggestions: Suggestion[] = []
 
   // Missing skills
   const missing = skills.filter((s) => s.status === "missing")
+  const matched = skills.filter((s) => s.status === "match")
 
-  // Critical: technical skills missing
+  // Group missing skills by category for better suggestions
+  const missingByCategory: Record<string, SkillMatch[]> = {}
+  for (const skill of missing) {
+    if (!missingByCategory[skill.category]) {
+      missingByCategory[skill.category] = []
+    }
+    missingByCategory[skill.category].push(skill)
+  }
+
+  // Critical: technical skills missing (limit to top 5 most important)
   const criticalCategories = ["languages", "frameworks", "databases"]
-  for (const skill of missing) {
-    if (criticalCategories.includes(skill.category)) {
-      suggestions.push({
-        type: "critical",
-        message: `Inclua experiencia pratica com ${skill.skill.toUpperCase()} no seu curriculo. Esta e uma competencia-chave para esta vaga.`,
-        skill: skill.skill,
-      })
-    }
-  }
-
-  // Important: devops and tools
-  const importantCategories = ["devops", "tools", "concepts"]
-  for (const skill of missing) {
-    if (importantCategories.includes(skill.category)) {
-      suggestions.push({
-        type: "important",
-        message: `Mencione conhecimento em ${skill.skill} — mesmo projetos pessoais contam.`,
-        skill: skill.skill,
-      })
-    }
-  }
-
-  // Soft skills
-  for (const skill of missing) {
-    if (skill.category === "softskills") {
-      suggestions.push({
-        type: "nice-to-have",
-        message: `Considere adicionar exemplos de ${skill.skill} na descricao das suas experiencias.`,
-        skill: skill.skill,
-      })
-    }
-  }
-
-  // General suggestions based on score
-  if (score < 40) {
+  const criticalMissing = missing.filter(s => criticalCategories.includes(s.category)).slice(0, 5)
+  
+  for (const skill of criticalMissing) {
+    const categoryLabel = getCategoryLabel(skill.category)
     suggestions.push({
       type: "critical",
-      message: "Seu curriculo tem baixa compatibilidade com esta vaga. Considere reescrever focando nas palavras-chave e tecnologias mencionadas.",
+      message: `🔴 CRÍTICO: Adicione ${skill.skill.toUpperCase()} na seção de habilidades técnicas. Se você já tem experiência, mencione projetos ou cursos que demonstrem conhecimento prático.`,
+      skill: skill.skill,
     })
-  } else if (score < 60) {
+  }
+
+  // Important: devops and tools (limit to top 3)
+  const importantCategories = ["devops", "tools"]
+  const importantMissing = missing.filter(s => importantCategories.includes(s.category)).slice(0, 3)
+  
+  for (const skill of importantMissing) {
     suggestions.push({
       type: "important",
-      message: "Voce esta no caminho certo! Foque em adicionar as tecnologias que faltam e use termos similares aos da descricao da vaga.",
+      message: `🟡 IMPORTANTE: Inclua ${skill.skill} mesmo que seja em projetos pessoais ou estudos. Mencione onde você usou (ex: "Projeto X usando ${skill.skill} para...").`,
+      skill: skill.skill,
+    })
+  }
+
+  // Concepts (limit to top 2)
+  const conceptsMissing = missing.filter(s => s.category === "concepts").slice(0, 2)
+  for (const skill of conceptsMissing) {
+    suggestions.push({
+      type: "important",
+      message: `💡 Adicione ${skill.skill} na descrição das suas experiências. Mostre como você aplica esse conceito na prática.`,
+      skill: skill.skill,
+    })
+  }
+
+  // Soft skills (limit to top 2)
+  const softskillsMissing = missing.filter(s => s.category === "softskills").slice(0, 2)
+  for (const skill of softskillsMissing) {
+    suggestions.push({
+      type: "nice-to-have",
+      message: `✨ Mencione ${skill.skill} com exemplos concretos nas descrições de experiência (ex: "Demonstrei ${skill.skill} ao...").`,
+      skill: skill.skill,
+    })
+  }
+
+  // Experience level mismatch
+  if (jobLevel !== "nao especificado" && resumeLevel !== "nao especificado" && jobLevel !== resumeLevel) {
+    if (jobLevel === "junior" && (resumeLevel === "pleno" || resumeLevel === "senior")) {
+      suggestions.push({
+        type: "important",
+        message: "⚠️ A vaga é para JÚNIOR, mas seu currículo indica nível mais avançado. Considere destacar sua disposição para aprender e crescimento, ou procure vagas mais alinhadas ao seu nível.",
+      })
+    } else if (jobLevel === "senior" && resumeLevel === "junior") {
+      suggestions.push({
+        type: "critical",
+        message: "🔴 A vaga requer nível SÊNIOR, mas seu currículo indica JÚNIOR. Foque em adicionar mais experiências, projetos complexos e resultados mensuráveis para demonstrar senioridade.",
+      })
+    }
+  }
+
+  // Score-based actionable suggestions
+  if (score < 40) {
+    const topMissing = missing.slice(0, 3).map(s => s.skill).join(", ")
+    suggestions.push({
+      type: "critical",
+      message: `📉 Score baixo (${score}%). AÇÃO IMEDIATA: Reescreva seu currículo incluindo as palavras-chave da vaga. Priorize: ${topMissing}. Use os mesmos termos que aparecem na descrição da vaga.`,
+    })
+  } else if (score < 60) {
+    const topMissing = missing.slice(0, 2).map(s => s.skill).join(" e ")
+    suggestions.push({
+      type: "important",
+      message: `📊 Você está no caminho certo (${score}%)! Para melhorar: adicione ${topMissing} e reformule experiências usando termos similares aos da vaga.`,
     })
   } else if (score < 80) {
     suggestions.push({
       type: "nice-to-have",
-      message: "Boa compatibilidade! Refine os detalhes: adicione metricas de impacto e projetos relevantes para se destacar.",
+      message: `✅ Boa compatibilidade (${score}%)! Para se destacar: adicione métricas de impacto (ex: "Aumentei performance em X%"), resultados quantificáveis e projetos relevantes no topo do currículo.`,
+    })
+  } else {
+    suggestions.push({
+      type: "nice-to-have",
+      message: `🎉 Excelente compatibilidade (${score}%)! Seu currículo está bem alinhado. Dica final: personalize a carta de apresentação destacando os pontos fortes identificados nesta análise.`,
     })
   }
 
-  return suggestions
+  // If many skills matched, give positive feedback
+  if (matched.length > 5) {
+    suggestions.push({
+      type: "nice-to-have",
+      message: `💪 Você já possui ${matched.length} habilidades técnicas que a vaga requer! Destaque essas competências no topo do currículo e na carta de apresentação.`,
+    })
+  }
+
+  return suggestions.slice(0, 10) // Limit to 10 most relevant suggestions
 }
 
 // ============================================================
@@ -325,18 +593,31 @@ export interface AnalysisResult {
   gaps: string[]
 }
 
-export function analyzeResume(jobDescription: string, resumeText: string): AnalysisResult {
+export async function analyzeResume(jobDescription: string, resumeText: string): Promise<AnalysisResult> {
   // 1. Tokenize
   const jobTokens = tokenize(jobDescription)
   const resumeTokens = tokenize(resumeText)
 
-  // 2. TF-IDF + Cosine Similarity
+  // 2. TF-IDF + Cosine Similarity (método tradicional)
   const { vec1, vec2 } = computeTfIdf(jobTokens, resumeTokens)
   const rawSimilarity = cosineSimilarity(vec1, vec2)
-  const similarityScore = Math.round(rawSimilarity * 100)
+  const tfidfScore = Math.round(rawSimilarity * 100)
 
-  // 3. Skills comparison
-  const skills = compareSkills(jobDescription, resumeText)
+  // 2.1. Similaridade Semântica (embeddings) - complementa TF-IDF
+  let semanticScore = 0
+  try {
+    const semanticSim = await semanticSimilarity(jobDescription, resumeText)
+    semanticScore = Math.round(semanticSim * 100)
+  } catch (error) {
+    console.warn('Semantic similarity failed, using TF-IDF only:', error)
+    semanticScore = tfidfScore // Fallback para TF-IDF
+  }
+
+  // Combinar scores: 60% semântico (mais preciso) + 40% TF-IDF (mais rápido)
+  const similarityScore = Math.round(semanticScore * 0.6 + tfidfScore * 0.4)
+
+  // 3. Skills comparison (híbrido: regex + semântico)
+  const skills = await compareSkills(jobDescription, resumeText, true)
   const matchedSkills = skills.filter((s) => s.status === "match").length
   const jobRequiredSkills = skills.filter((s) => s.foundInJob).length
   const skillsScore = jobRequiredSkills > 0
@@ -396,7 +677,7 @@ export function analyzeResume(jobDescription: string, resumeText: string): Analy
   }
 
   // 8. Suggestions
-  const suggestions = generateSuggestions(skills, overallScore)
+  const suggestions = generateSuggestions(skills, overallScore, jobLevel, resumeLevel)
 
   return {
     overallScore: Math.min(overallScore, 100),

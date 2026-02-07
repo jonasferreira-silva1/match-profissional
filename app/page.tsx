@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Sparkles, BarChart3, Shield, Zap, Brain, Github } from "lucide-react"
+import { Sparkles, BarChart3, Shield, Zap, Brain, Github, Linkedin } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { UploadForm } from "@/components/upload-form"
 import { LoadingScreen } from "@/components/loading-screen"
@@ -61,13 +61,24 @@ export default function Page() {
           </div>
           <div className="flex items-center gap-2">
             <a
-              href="https://github.com"
+              href="https://github.com/jonasferreira-silva1"
               target="_blank"
               rel="noopener noreferrer"
               className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors"
               aria-label="GitHub"
+              title="GitHub - Jonas Silva"
             >
               <Github className="h-4 w-4" />
+            </a>
+            <a
+              href="https://www.linkedin.com/in/jonas-silva01/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="LinkedIn"
+              title="LinkedIn - Jonas Silva"
+            >
+              <Linkedin className="h-4 w-4" />
             </a>
             <ThemeToggle />
           </div>
@@ -159,8 +170,29 @@ export default function Page() {
             </section>
 
             {/* Footer */}
-            <footer className="flex items-center justify-center py-8 text-xs text-muted-foreground">
+            <footer className="flex flex-col items-center gap-3 py-8 text-xs text-muted-foreground">
               <span>Feito com NLP, TF-IDF e dedicacao</span>
+              <div className="flex items-center gap-4">
+                <a
+                  href="https://github.com/jonasferreira-silva1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                >
+                  <Github className="h-3.5 w-3.5" />
+                  <span>GitHub</span>
+                </a>
+                <span>•</span>
+                <a
+                  href="https://www.linkedin.com/in/jonas-silva01/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                >
+                  <Linkedin className="h-3.5 w-3.5" />
+                  <span>LinkedIn</span>
+                </a>
+              </div>
             </footer>
           </div>
         )}
