@@ -17,7 +17,7 @@
 
 ## 📋 Sobre o Projeto
 
-**ResumeMatch AI** é uma aplicação web moderna que utiliza técnicas avançadas de **Processamento de Linguagem Natural (NLP)** para analisar a compatibilidade entre currículos e descrições de vagas de emprego. A plataforma oferece um diagnóstico completo e acionável, ajudando candidatos a entender por que não estão passando em processos seletivos e como melhorar suas chances.
+**ResumeMatch AI** é uma aplicação web moderna pessoal em desenvolvimento que utiliza técnicas avançadas de **Processamento de Linguagem Natural (NLP)** para analisar a compatibilidade entre currículos e descrições de vagas de emprego. A plataforma oferece um diagnóstico completo e acionável, ajudando candidatos a entender por que não estão passando em processos seletivos e como melhorar suas chances.
 
 ### 🎯 Objetivo Principal
 
@@ -407,4 +407,9 @@ Para dúvidas, sugestões ou problemas, abra uma issue no repositório.
 [⬆ Voltar ao topo](#resumematch-ai)
 
 </div>
+
+## 📧 Imagem do Frontend
+
+<img width="886" height="437" alt="image" src="https://github.com/user-attachments/assets/291ce91f-f652-4a4b-9896-6a7713df6ddb" />
+
 
